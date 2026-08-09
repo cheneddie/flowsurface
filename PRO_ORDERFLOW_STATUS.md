@@ -5,8 +5,8 @@ This branch extends Flowsurface as a native Rust/WGPU professional order-flow wo
 ## Implemented core
 
 - Trade Speed / Buy Speed / Sell Speed / Volume Speed / Delta Speed
-- Speed acceleration and configurable rolling windows
-- Native Trade Speed Kline indicator with buffered-trade seeding
+- Speed acceleration and selectable 250ms / 500ms / 1s / 2s / 5s / 10s rolling windows
+- Native Trade Speed Kline indicators with buffered-trade seeding
 - Conservative trade-confirmed Book Consumption detector
 - Book Speed aggregation and composed Book Flow engine
 - Live Heatmap Book Speed integration and HUD
@@ -29,4 +29,4 @@ The branch is not considered complete until all of the following pass on the cur
 2. `cargo test --workspace --all-targets --all-features`
 3. `cargo clippy --workspace --all-targets --all-features -- -D warnings`
 
-The current validation cycle also compiles the native Drawing Overlay and Heatmap Book Speed UI integration.
+The current validation cycle compiles the native Drawing Overlay, Heatmap Book Speed HUD, selectable Trade Speed indicators and all core order-flow/replay engines together.
