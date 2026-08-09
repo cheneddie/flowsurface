@@ -2,6 +2,7 @@ pub mod advanced;
 pub mod book_consumption;
 pub mod book_flow;
 pub mod mbo;
+pub mod pipeline;
 pub mod speed;
 pub mod window;
 
@@ -15,6 +16,9 @@ pub use book_consumption::{BookConsumptionDetector, ConsumptionConfig};
 pub use book_flow::{BookFlowEngine, BookFlowUpdate};
 pub use mbo::{
     IcebergCandidate, IcebergConfig, MboAction, MboBook, MboEvent, MboOrder, MboSide, OrderId,
+};
+pub use pipeline::{
+    OrderFlowPipeline, OrderFlowPipelineConfig, OrderFlowPipelineError, OrderFlowPipelineUpdate,
 };
 pub use speed::{
     BookConsumptionEvent, BookSide, BookSpeedEngine, BookSpeedSnapshot, SpeedConfig,
