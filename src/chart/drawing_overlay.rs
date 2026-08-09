@@ -1,5 +1,9 @@
-use std::{cell::{Cell, RefCell}, fs};
+use std::{
+    cell::{Cell, RefCell},
+    fs,
+};
 
+use data::chart::kline::KlineDataPoint;
 use data::{
     chart::{Basis, PlotData},
     drawing::{
@@ -7,7 +11,6 @@ use data::{
         fibonacci_extension_prices, fibonacci_retracement_prices, snap_to_ohlc,
     },
 };
-use data::chart::kline::KlineDataPoint;
 use exchange::{TickerInfo, UnixMs, unit::Price};
 use iced::{
     Alignment, Point, Rectangle, Size, Theme, keyboard, mouse,
@@ -216,7 +219,9 @@ impl DrawingOverlay {
                 }
             }
             Event::Mouse(mouse::Event::CursorMoved { .. }) => {
-                let Some(pos) = cursor_pos else { return None; };
+                let Some(pos) = cursor_pos else {
+                    return None;
+                };
                 let point = self.market_point(pos, bounds, chart, source);
 
                 if let Some(drag) = self.drag.borrow_mut().as_mut() {
@@ -309,7 +314,13 @@ impl DrawingOverlay {
             match draft {
                 Draft::Points { tool, points } => {
                     if let Some(kind) = kind_from_points(*tool, points.clone()) {
-                        self.draw_kind(frame, chart, &kind, selected_color.scale_alpha(0.6), region);
+                        self.draw_kind(
+                            frame,
+                            chart,
+                            &kind,
+                            selected_color.scale_alpha(0.6),
+                            region,
+                        );
                     }
                 }
                 Draft::Brush(points) if points.len() >= 2 => {
@@ -346,7 +357,10 @@ impl DrawingOverlay {
 
         let mut draft = self.draft.borrow_mut();
         match draft.as_mut() {
-            Some(Draft::Points { tool: existing, points }) if *existing == tool => {
+            Some(Draft::Points {
+                tool: existing,
+                points,
+            }) if *existing == tool => {
                 points.push(point);
                 if points.len() >= required {
                     let points = points.clone();
@@ -555,7 +569,11 @@ impl DrawingOverlay {
                 let a = p(*start);
                 let b = p(*through);
                 let dx = b.x - a.x;
-                let target_x = if dx >= 0.0 { region.x + region.width } else { region.x };
+                let target_x = if dx >= 0.0 {
+                    region.x + region.width
+                } else {
+                    region.x
+                };
                 let target_y = if dx.abs() <= f32::EPSILON {
                     b.y
                 } else {
@@ -619,7 +637,11 @@ impl DrawingOverlay {
                     self.draw_label(frame, chart, color, x2, py, &format!("{ratio:.3}"));
                 }
             }
-            DrawingKind::FibExtension { start, end, projection } => {
+            DrawingKind::FibExtension {
+                start,
+                end,
+                projection,
+            } => {
                 let x1 = x(projection.x);
                 let x2 = region.x + region.width;
                 for (ratio, price) in
@@ -692,9 +714,10 @@ fn kline_at(
     interval: u64,
 ) -> Option<exchange::Kline> {
     match (source, basis) {
-        (PlotData::TimeBased(series), Basis::Time(_)) => {
-            series.datapoints.get(&UnixMs::new(interval)).map(|dp| dp.kline)
-        }
+        (PlotData::TimeBased(series), Basis::Time(_)) => series
+            .datapoints
+            .get(&UnixMs::new(interval))
+            .map(|dp| dp.kline),
         (PlotData::TickBased(series), Basis::Tick(_)) => {
             series.datapoints.get(interval as usize).map(|dp| dp.kline)
         }
@@ -729,20 +752,40 @@ fn drawing_distance_px(
 ) -> f32 {
     let sp = |point| screen_point(point, bounds, chart);
     match kind {
-        DrawingKind::TrendLine { start, end } | DrawingKind::Ray { start, through: end } => {
-            segment_distance(pos, sp(*start), sp(*end))
-        }
+        DrawingKind::TrendLine { start, end }
+        | DrawingKind::Ray {
+            start,
+            through: end,
+        } => segment_distance(pos, sp(*start), sp(*end)),
         DrawingKind::HorizontalLine { price } => {
             let y = screen_point(
-                DrawingPoint { x: match chart.basis { Basis::Time(_) => DrawingX::Time(UnixMs::new(chart.latest_x)), Basis::Tick(_) => DrawingX::Tick(chart.latest_x) }, price: *price },
+                DrawingPoint {
+                    x: match chart.basis {
+                        Basis::Time(_) => DrawingX::Time(UnixMs::new(chart.latest_x)),
+                        Basis::Tick(_) => DrawingX::Tick(chart.latest_x),
+                    },
+                    price: *price,
+                },
                 bounds,
                 chart,
-            ).y;
+            )
+            .y;
             (pos.y - y).abs()
         }
         DrawingKind::HorizontalRay { start, price } => {
-            let a = screen_point(DrawingPoint { x: *start, price: *price }, bounds, chart);
-            if pos.x + HIT_RADIUS_PX < a.x { f32::INFINITY } else { (pos.y - a.y).abs() }
+            let a = screen_point(
+                DrawingPoint {
+                    x: *start,
+                    price: *price,
+                },
+                bounds,
+                chart,
+            );
+            if pos.x + HIT_RADIUS_PX < a.x {
+                f32::INFINITY
+            } else {
+                (pos.y - a.y).abs()
+            }
         }
         DrawingKind::VerticalLine { x } => {
             let px = screen_x(*x, bounds, chart);
@@ -760,7 +803,9 @@ fn drawing_distance_px(
                 segment_distance(pos, Point::new(right, top), Point::new(right, bottom)),
                 segment_distance(pos, Point::new(right, bottom), Point::new(left, bottom)),
                 segment_distance(pos, Point::new(left, bottom), Point::new(left, top)),
-            ].into_iter().fold(f32::INFINITY, f32::min)
+            ]
+            .into_iter()
+            .fold(f32::INFINITY, f32::min)
         }
         DrawingKind::ParallelChannel { start, end, offset } => {
             let a = sp(*start);
@@ -770,9 +815,20 @@ fn drawing_distance_px(
             segment_distance(pos, a, b).min(segment_distance(pos, c, d))
         }
         DrawingKind::FibRetracement { start, end } => segment_distance(pos, sp(*start), sp(*end)),
-        DrawingKind::FibExtension { start, end, projection } => segment_distance(pos, sp(*start), sp(*end)).min(segment_distance(pos, sp(*end), sp(*projection))),
+        DrawingKind::FibExtension {
+            start,
+            end,
+            projection,
+        } => segment_distance(pos, sp(*start), sp(*end)).min(segment_distance(
+            pos,
+            sp(*end),
+            sp(*projection),
+        )),
         DrawingKind::Text { at, .. } => point_distance(pos, sp(*at)),
-        DrawingKind::Brush { points } => points.windows(2).map(|pair| segment_distance(pos, sp(pair[0]), sp(pair[1]))).fold(f32::INFINITY, f32::min),
+        DrawingKind::Brush { points } => points
+            .windows(2)
+            .map(|pair| segment_distance(pos, sp(pair[0]), sp(pair[1])))
+            .fold(f32::INFINITY, f32::min),
     }
 }
 
@@ -798,14 +854,37 @@ fn segment_distance(p: Point, a: Point, b: Point) -> f32 {
 fn kind_from_points(tool: DrawingTool, points: Vec<DrawingPoint>) -> Option<DrawingKind> {
     match tool {
         DrawingTool::Select | DrawingTool::Brush => None,
-        DrawingTool::HorizontalLine => Some(DrawingKind::HorizontalLine { price: points.first()?.price }),
-        DrawingTool::VerticalLine => Some(DrawingKind::VerticalLine { x: points.first()?.x }),
-        DrawingTool::Text => Some(DrawingKind::Text { at: *points.first()?, text: "Text".to_owned() }),
-        DrawingTool::TrendLine => Some(DrawingKind::TrendLine { start: *points.first()?, end: *points.get(1)? }),
-        DrawingTool::Ray => Some(DrawingKind::Ray { start: *points.first()?, through: *points.get(1)? }),
-        DrawingTool::Rectangle => Some(DrawingKind::Rectangle { start: *points.first()?, end: *points.get(1)? }),
-        DrawingTool::FibRetracement => Some(DrawingKind::FibRetracement { start: *points.first()?, end: *points.get(1)? }),
-        DrawingTool::FibExtension => Some(DrawingKind::FibExtension { start: *points.first()?, end: *points.get(1)?, projection: *points.get(2)? }),
+        DrawingTool::HorizontalLine => Some(DrawingKind::HorizontalLine {
+            price: points.first()?.price,
+        }),
+        DrawingTool::VerticalLine => Some(DrawingKind::VerticalLine {
+            x: points.first()?.x,
+        }),
+        DrawingTool::Text => Some(DrawingKind::Text {
+            at: *points.first()?,
+            text: "Text".to_owned(),
+        }),
+        DrawingTool::TrendLine => Some(DrawingKind::TrendLine {
+            start: *points.first()?,
+            end: *points.get(1)?,
+        }),
+        DrawingTool::Ray => Some(DrawingKind::Ray {
+            start: *points.first()?,
+            through: *points.get(1)?,
+        }),
+        DrawingTool::Rectangle => Some(DrawingKind::Rectangle {
+            start: *points.first()?,
+            end: *points.get(1)?,
+        }),
+        DrawingTool::FibRetracement => Some(DrawingKind::FibRetracement {
+            start: *points.first()?,
+            end: *points.get(1)?,
+        }),
+        DrawingTool::FibExtension => Some(DrawingKind::FibExtension {
+            start: *points.first()?,
+            end: *points.get(1)?,
+            projection: *points.get(2)?,
+        }),
     }
 }
 
@@ -814,21 +893,63 @@ fn translate_kind(kind: &DrawingKind, start: DrawingPoint, current: DrawingPoint
     let x_delta = drawing_x_delta(start.x, current.x);
     let shift_point = |point: DrawingPoint| DrawingPoint {
         x: shift_x(point.x, x_delta),
-        price: Price { units: point.price.units.saturating_add(price_delta) },
+        price: Price {
+            units: point.price.units.saturating_add(price_delta),
+        },
     };
 
     match kind {
-        DrawingKind::TrendLine { start, end } => DrawingKind::TrendLine { start: shift_point(*start), end: shift_point(*end) },
-        DrawingKind::Ray { start, through } => DrawingKind::Ray { start: shift_point(*start), through: shift_point(*through) },
-        DrawingKind::HorizontalLine { price } => DrawingKind::HorizontalLine { price: Price { units: price.units.saturating_add(price_delta) } },
-        DrawingKind::HorizontalRay { start, price } => DrawingKind::HorizontalRay { start: shift_x(*start, x_delta), price: Price { units: price.units.saturating_add(price_delta) } },
-        DrawingKind::VerticalLine { x } => DrawingKind::VerticalLine { x: shift_x(*x, x_delta) },
-        DrawingKind::Rectangle { start, end } => DrawingKind::Rectangle { start: shift_point(*start), end: shift_point(*end) },
-        DrawingKind::ParallelChannel { start, end, offset } => DrawingKind::ParallelChannel { start: shift_point(*start), end: shift_point(*end), offset: shift_point(*offset) },
-        DrawingKind::FibRetracement { start, end } => DrawingKind::FibRetracement { start: shift_point(*start), end: shift_point(*end) },
-        DrawingKind::FibExtension { start, end, projection } => DrawingKind::FibExtension { start: shift_point(*start), end: shift_point(*end), projection: shift_point(*projection) },
-        DrawingKind::Text { at, text } => DrawingKind::Text { at: shift_point(*at), text: text.clone() },
-        DrawingKind::Brush { points } => DrawingKind::Brush { points: points.iter().copied().map(shift_point).collect() },
+        DrawingKind::TrendLine { start, end } => DrawingKind::TrendLine {
+            start: shift_point(*start),
+            end: shift_point(*end),
+        },
+        DrawingKind::Ray { start, through } => DrawingKind::Ray {
+            start: shift_point(*start),
+            through: shift_point(*through),
+        },
+        DrawingKind::HorizontalLine { price } => DrawingKind::HorizontalLine {
+            price: Price {
+                units: price.units.saturating_add(price_delta),
+            },
+        },
+        DrawingKind::HorizontalRay { start, price } => DrawingKind::HorizontalRay {
+            start: shift_x(*start, x_delta),
+            price: Price {
+                units: price.units.saturating_add(price_delta),
+            },
+        },
+        DrawingKind::VerticalLine { x } => DrawingKind::VerticalLine {
+            x: shift_x(*x, x_delta),
+        },
+        DrawingKind::Rectangle { start, end } => DrawingKind::Rectangle {
+            start: shift_point(*start),
+            end: shift_point(*end),
+        },
+        DrawingKind::ParallelChannel { start, end, offset } => DrawingKind::ParallelChannel {
+            start: shift_point(*start),
+            end: shift_point(*end),
+            offset: shift_point(*offset),
+        },
+        DrawingKind::FibRetracement { start, end } => DrawingKind::FibRetracement {
+            start: shift_point(*start),
+            end: shift_point(*end),
+        },
+        DrawingKind::FibExtension {
+            start,
+            end,
+            projection,
+        } => DrawingKind::FibExtension {
+            start: shift_point(*start),
+            end: shift_point(*end),
+            projection: shift_point(*projection),
+        },
+        DrawingKind::Text { at, text } => DrawingKind::Text {
+            at: shift_point(*at),
+            text: text.clone(),
+        },
+        DrawingKind::Brush { points } => DrawingKind::Brush {
+            points: points.iter().copied().map(shift_point).collect(),
+        },
     }
 }
 
@@ -845,7 +966,11 @@ fn drawing_x_delta(start: DrawingX, current: DrawingX) -> i64 {
 fn shift_x(x: DrawingX, delta: i64) -> DrawingX {
     match x {
         DrawingX::Time(time) => DrawingX::Time(time.saturating_add_signed(delta)),
-        DrawingX::Tick(index) => DrawingX::Tick(if delta >= 0 { index.saturating_add(delta as u64) } else { index.saturating_sub(delta.unsigned_abs()) }),
+        DrawingX::Tick(index) => DrawingX::Tick(if delta >= 0 {
+            index.saturating_add(delta as u64)
+        } else {
+            index.saturating_sub(delta.unsigned_abs())
+        }),
     }
 }
 
@@ -853,14 +978,23 @@ fn shift_x(x: DrawingX, delta: i64) -> DrawingX {
 mod tests {
     use super::*;
 
-    fn p(v: f64) -> Price { Price::from_f64(v) }
-    fn pt(t: u64, v: f64) -> DrawingPoint { DrawingPoint::time(UnixMs::new(t), p(v)) }
+    fn p(v: f64) -> Price {
+        Price::from_f64(v)
+    }
+    fn pt(t: u64, v: f64) -> DrawingPoint {
+        DrawingPoint::time(UnixMs::new(t), p(v))
+    }
 
     #[test]
     fn translate_moves_both_time_and_price() {
-        let kind = DrawingKind::TrendLine { start: pt(1000, 100.0), end: pt(2000, 101.0) };
+        let kind = DrawingKind::TrendLine {
+            start: pt(1000, 100.0),
+            end: pt(2000, 101.0),
+        };
         let moved = translate_kind(&kind, pt(5000, 100.0), pt(5500, 102.0));
-        let DrawingKind::TrendLine { start, end } = moved else { panic!("trend") };
+        let DrawingKind::TrendLine { start, end } = moved else {
+            panic!("trend")
+        };
         assert_eq!(start.x, DrawingX::Time(UnixMs::new(1500)));
         assert_eq!(end.x, DrawingX::Time(UnixMs::new(2500)));
         assert_eq!(start.price, p(102.0));
@@ -869,12 +1003,21 @@ mod tests {
 
     #[test]
     fn segment_distance_hits_middle_of_line() {
-        assert!(segment_distance(Point::new(5.0, 1.0), Point::new(0.0, 0.0), Point::new(10.0, 0.0)) < 1.1);
+        assert!(
+            segment_distance(
+                Point::new(5.0, 1.0),
+                Point::new(0.0, 0.0),
+                Point::new(10.0, 0.0)
+            ) < 1.1
+        );
     }
 
     #[test]
     fn two_points_build_fibonacci_retracement() {
-        let kind = kind_from_points(DrawingTool::FibRetracement, vec![pt(1, 100.0), pt(2, 110.0)]);
+        let kind = kind_from_points(
+            DrawingTool::FibRetracement,
+            vec![pt(1, 100.0), pt(2, 110.0)],
+        );
         assert!(matches!(kind, Some(DrawingKind::FibRetracement { .. })));
     }
 }

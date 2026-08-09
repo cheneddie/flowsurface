@@ -165,6 +165,7 @@ pub struct KlineChart {
     chart: ViewState,
     data_source: PlotData<KlineDataPoint>,
     raw_trades: Vec<Trade>,
+    drawing_overlay: super::drawing_overlay::DrawingOverlay,
     indicators: EnumMap<KlineIndicator, Option<Box<dyn KlineIndicatorImpl>>>,
     fetching_trades: (bool, Option<Handle>),
     pub(crate) kind: KlineChartKind,
@@ -267,6 +268,10 @@ impl KlineChart {
                     visual_config,
                     data_source,
                     raw_trades,
+                    drawing_overlay: super::drawing_overlay::DrawingOverlay::new(
+                        ticker_info,
+                        basis,
+                    ),
                     indicators,
                     fetching_trades: (false, None),
                     request_handler: RequestHandler::default(),
@@ -328,6 +333,10 @@ impl KlineChart {
                     visual_config,
                     data_source,
                     raw_trades,
+                    drawing_overlay: super::drawing_overlay::DrawingOverlay::new(
+                        ticker_info,
+                        basis,
+                    ),
                     indicators,
                     fetching_trades: (false, None),
                     request_handler: RequestHandler::default(),
@@ -982,6 +991,13 @@ impl canvas::Program<Message> for KlineChart {
         bounds: Rectangle,
         cursor: mouse::Cursor,
     ) -> Option<canvas::Action<Message>> {
+        if let Some(action) =
+            self.drawing_overlay
+                .update(event, bounds, cursor, &self.chart, &self.data_source)
+        {
+            self.chart.cache.clear_all();
+            return Some(action);
+        }
         super::canvas_interaction(self, interaction, event, bounds, cursor)
     }
 
@@ -1124,6 +1140,8 @@ impl canvas::Program<Message> for KlineChart {
                 }
             }
 
+            self.drawing_overlay
+                .draw(frame, chart, &self.data_source, palette, region);
             chart.draw_last_price_line(frame, palette, region);
         });
 
