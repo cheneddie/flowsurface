@@ -14,7 +14,6 @@ new = """    data_source: PlotData<KlineDataPoint>,\n    raw_trades: Vec<Trade>,
 if old in text:
     text = text.replace(old, new, 1)
 
-# Two constructors
 old = """                    data_source,\n                    raw_trades,\n                    indicators,\n"""
 new = """                    data_source,\n                    raw_trades,\n                    drawing_overlay: super::drawing_overlay::DrawingOverlay::new(ticker_info, basis),\n                    indicators,\n"""
 count = text.count(old)
@@ -47,3 +46,15 @@ if text.count("DrawingOverlay::new(ticker_info, basis)") != 2:
     raise SystemExit("expected DrawingOverlay in both constructors")
 
 path.write_text(text, encoding="utf-8")
+
+# Iced 0.14 compile hardening for the overlay module.
+overlay_path = Path("src/chart/drawing_overlay.rs")
+overlay = overlay_path.read_text(encoding="utf-8")
+overlay = overlay.replace(
+    "Alignment, Point, Rectangle, Size, Theme, keyboard, mouse,",
+    "Alignment, Point, Rectangle, Size, keyboard, mouse,",
+)
+overlay = overlay.replace("align_y: Alignment::Bottom.into(),", "align_y: Alignment::End.into(),")
+if "Alignment::Bottom" in overlay:
+    raise SystemExit("unsupported Alignment::Bottom still present")
+overlay_path.write_text(overlay, encoding="utf-8")
