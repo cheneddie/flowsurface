@@ -15,11 +15,20 @@ pub enum KlineIndicator {
     Volume,
     BarAnalysis,
     CumulativeDelta,
+    TradeSpeed250ms,
+    TradeSpeed500ms,
+    TradeSpeed,
+    TradeSpeed2s,
+    TradeSpeed5s,
+    TradeSpeed10s,
     OpenInterest,
 }
 
 impl Indicator for KlineIndicator {
-    fn for_market(market: MarketKind) -> &'static [Self] {
+    fn for_market(market: MarketKind) -> &'static [Self]
+    where
+        Self: Sized,
+    {
         match market {
             MarketKind::Spot => &Self::FOR_SPOT,
             MarketKind::LinearPerps | MarketKind::InversePerps => &Self::FOR_PERPS,
@@ -31,16 +40,28 @@ impl KlineIndicator {
     // Indicator togglers on UI menus depend on these arrays.
     // Every variant needs to be in either SPOT, PERPS or both.
     /// Indicators that can be used with spot market tickers
-    const FOR_SPOT: [KlineIndicator; 3] = [
+    const FOR_SPOT: [KlineIndicator; 9] = [
         KlineIndicator::Volume,
         KlineIndicator::BarAnalysis,
         KlineIndicator::CumulativeDelta,
+        KlineIndicator::TradeSpeed250ms,
+        KlineIndicator::TradeSpeed500ms,
+        KlineIndicator::TradeSpeed,
+        KlineIndicator::TradeSpeed2s,
+        KlineIndicator::TradeSpeed5s,
+        KlineIndicator::TradeSpeed10s,
     ];
     /// Indicators that can be used with perpetual swap market tickers
-    const FOR_PERPS: [KlineIndicator; 4] = [
+    const FOR_PERPS: [KlineIndicator; 10] = [
         KlineIndicator::Volume,
         KlineIndicator::BarAnalysis,
         KlineIndicator::CumulativeDelta,
+        KlineIndicator::TradeSpeed250ms,
+        KlineIndicator::TradeSpeed500ms,
+        KlineIndicator::TradeSpeed,
+        KlineIndicator::TradeSpeed2s,
+        KlineIndicator::TradeSpeed5s,
+        KlineIndicator::TradeSpeed10s,
         KlineIndicator::OpenInterest,
     ];
 }
@@ -51,6 +72,12 @@ impl Display for KlineIndicator {
             KlineIndicator::Volume => write!(f, "Volume"),
             KlineIndicator::BarAnalysis => write!(f, "Bar Analysis"),
             KlineIndicator::CumulativeDelta => write!(f, "CVD"),
+            KlineIndicator::TradeSpeed250ms => write!(f, "Trade Speed 250ms"),
+            KlineIndicator::TradeSpeed500ms => write!(f, "Trade Speed 500ms"),
+            KlineIndicator::TradeSpeed => write!(f, "Trade Speed 1s"),
+            KlineIndicator::TradeSpeed2s => write!(f, "Trade Speed 2s"),
+            KlineIndicator::TradeSpeed5s => write!(f, "Trade Speed 5s"),
+            KlineIndicator::TradeSpeed10s => write!(f, "Trade Speed 10s"),
             KlineIndicator::OpenInterest => write!(f, "Open Interest"),
         }
     }
@@ -62,7 +89,10 @@ pub enum HeatmapIndicator {
 }
 
 impl Indicator for HeatmapIndicator {
-    fn for_market(market: MarketKind) -> &'static [Self] {
+    fn for_market(market: MarketKind) -> &'static [Self]
+    where
+        Self: Sized,
+    {
         match market {
             MarketKind::Spot => &Self::FOR_SPOT,
             MarketKind::LinearPerps | MarketKind::InversePerps => &Self::FOR_PERPS,

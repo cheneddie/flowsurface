@@ -1,4 +1,5 @@
 pub mod comparison;
+pub mod drawing_overlay;
 pub mod heatmap;
 pub mod indicator;
 pub mod kline;

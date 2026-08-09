@@ -165,6 +165,7 @@ pub struct KlineChart {
     chart: ViewState,
     data_source: PlotData<KlineDataPoint>,
     raw_trades: Vec<Trade>,
+    drawing_overlay: Box<super::drawing_overlay::DrawingOverlay>,
     indicators: EnumMap<KlineIndicator, Option<Box<dyn KlineIndicatorImpl>>>,
     fetching_trades: (bool, Option<Handle>),
     pub(crate) kind: KlineChartKind,
@@ -258,6 +259,7 @@ impl KlineChart {
                     }
                     let mut indi = indicator::kline::make_empty(i);
                     indi.rebuild_from_source(&data_source);
+                    indi.seed_trades(&raw_trades, &data_source);
                     indicators[i] = Some(indi);
                 }
 
@@ -266,6 +268,10 @@ impl KlineChart {
                     visual_config,
                     data_source,
                     raw_trades,
+                    drawing_overlay: Box::new(super::drawing_overlay::DrawingOverlay::new(
+                        ticker_info,
+                        basis,
+                    )),
                     indicators,
                     fetching_trades: (false, None),
                     request_handler: RequestHandler::default(),
@@ -318,6 +324,7 @@ impl KlineChart {
                     }
                     let mut indi = indicator::kline::make_empty(i);
                     indi.rebuild_from_source(&data_source);
+                    indi.seed_trades(&raw_trades, &data_source);
                     indicators[i] = Some(indi);
                 }
 
@@ -326,6 +333,10 @@ impl KlineChart {
                     visual_config,
                     data_source,
                     raw_trades,
+                    drawing_overlay: Box::new(super::drawing_overlay::DrawingOverlay::new(
+                        ticker_info,
+                        basis,
+                    )),
                     indicators,
                     fetching_trades: (false, None),
                     request_handler: RequestHandler::default(),
@@ -955,6 +966,7 @@ impl KlineChart {
         } else {
             let mut box_indi = indicator::kline::make_empty(indicator);
             box_indi.rebuild_from_source(&self.data_source);
+            box_indi.seed_trades(&self.raw_trades, &self.data_source);
             self.indicators[indicator] = Some(box_indi);
         }
 
@@ -979,6 +991,13 @@ impl canvas::Program<Message> for KlineChart {
         bounds: Rectangle,
         cursor: mouse::Cursor,
     ) -> Option<canvas::Action<Message>> {
+        if let Some(action) =
+            self.drawing_overlay
+                .update(event, bounds, cursor, &self.chart, &self.data_source)
+        {
+            self.chart.cache.clear_all();
+            return Some(action);
+        }
         super::canvas_interaction(self, interaction, event, bounds, cursor)
     }
 
@@ -1121,6 +1140,8 @@ impl canvas::Program<Message> for KlineChart {
                 }
             }
 
+            self.drawing_overlay
+                .draw(frame, chart, &self.data_source, palette, region);
             chart.draw_last_price_line(frame, palette, region);
         });
 

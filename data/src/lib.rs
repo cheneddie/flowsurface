@@ -2,9 +2,15 @@ pub mod aggr;
 pub mod audio;
 pub mod chart;
 pub mod config;
+pub mod drawing;
 pub mod layout;
 pub mod log;
+pub mod market;
+pub mod market_gateway;
+pub mod orderflow;
 pub mod panel;
+pub mod replay;
+pub mod replay_session;
 pub mod stream;
 pub mod tickers_table;
 pub mod util;
@@ -67,10 +73,8 @@ pub fn read_from_file(file_name: &str) -> Result<State, Box<dyn std::error::Erro
     match serde_json::from_str(&contents) {
         Ok(state) => Ok(state),
         Err(e) => {
-            // If parsing fails, backup the file
-            drop(file); // Close the file before renaming
+            drop(file);
 
-            // Create backup file with different name to prevent overwriting it
             let backup_file_name = if let Some(pos) = file_name.rfind('.') {
                 format!("{}_old{}", &file_name[..pos], &file_name[pos..])
             } else {
