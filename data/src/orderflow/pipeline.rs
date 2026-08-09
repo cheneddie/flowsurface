@@ -13,23 +13,12 @@ use super::{
     SpeedConfig, TradeSpeedEngine, TradeSpeedSnapshot,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct OrderFlowPipelineConfig {
     pub trade_speed: SpeedConfig,
     pub book_speed: SpeedConfig,
     pub consumption: ConsumptionConfig,
     pub iceberg: IcebergConfig,
-}
-
-impl Default for OrderFlowPipelineConfig {
-    fn default() -> Self {
-        Self {
-            trade_speed: SpeedConfig::default(),
-            book_speed: SpeedConfig::default(),
-            consumption: ConsumptionConfig::default(),
-            iceberg: IcebergConfig::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -44,8 +33,8 @@ pub struct OrderFlowPipelineUpdate {
 pub enum OrderFlowPipelineError {
     #[error("event belongs to {received:?}, pipeline is bound to {expected:?}")]
     InstrumentMismatch {
-        expected: InstrumentId,
-        received: InstrumentId,
+        expected: Box<InstrumentId>,
+        received: Box<InstrumentId>,
     },
 }
 
@@ -133,8 +122,8 @@ impl OrderFlowPipeline {
             Ok(())
         } else {
             Err(OrderFlowPipelineError::InstrumentMismatch {
-                expected: self.instrument.clone(),
-                received: received.clone(),
+                expected: Box::new(self.instrument.clone()),
+                received: Box::new(received.clone()),
             })
         }
     }
