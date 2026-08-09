@@ -258,6 +258,7 @@ impl KlineChart {
                     }
                     let mut indi = indicator::kline::make_empty(i);
                     indi.rebuild_from_source(&data_source);
+                    indi.seed_trades(&raw_trades, &data_source);
                     indicators[i] = Some(indi);
                 }
 
@@ -318,6 +319,7 @@ impl KlineChart {
                     }
                     let mut indi = indicator::kline::make_empty(i);
                     indi.rebuild_from_source(&data_source);
+                    indi.seed_trades(&raw_trades, &data_source);
                     indicators[i] = Some(indi);
                 }
 
@@ -955,6 +957,7 @@ impl KlineChart {
         } else {
             let mut box_indi = indicator::kline::make_empty(indicator);
             box_indi.rebuild_from_source(&self.data_source);
+            box_indi.seed_trades(&self.raw_trades, &self.data_source);
             self.indicators[indicator] = Some(box_indi);
         }
 
