@@ -34,7 +34,7 @@ if old in text:
 
 checks = [
     "drawing_overlay: super::drawing_overlay::DrawingOverlay",
-    "DrawingOverlay::new(ticker_info, basis)",
+    "drawing_overlay: super::drawing_overlay::DrawingOverlay::new(",
     "self.drawing_overlay.update(",
     "self.drawing_overlay\n                .draw(",
 ]
@@ -42,7 +42,7 @@ for needle in checks:
     if needle not in text:
         raise SystemExit(f"drawing UI integration missing: {needle}")
 
-if text.count("DrawingOverlay::new(ticker_info, basis)") != 2:
+if text.count("drawing_overlay: super::drawing_overlay::DrawingOverlay::new(") != 2:
     raise SystemExit("expected DrawingOverlay in both constructors")
 
 path.write_text(text, encoding="utf-8")
