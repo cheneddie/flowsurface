@@ -408,7 +408,7 @@ mod tests {
 
     #[test]
     fn weak_magnet_snaps_only_nearby_prices() {
-        let step = PriceStep::from_f64(0.5);
+        let step = PriceStep { units: p(0.5).units };
         let candidates = [p(100.0), p(101.0)];
 
         assert_eq!(
