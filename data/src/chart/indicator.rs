@@ -15,11 +15,15 @@ pub enum KlineIndicator {
     Volume,
     BarAnalysis,
     CumulativeDelta,
+    TradeSpeed,
     OpenInterest,
 }
 
 impl Indicator for KlineIndicator {
-    fn for_market(market: MarketKind) -> &'static [Self] {
+    fn for_market(market: MarketKind) -> &'static [Self]
+    where
+        Self: Sized,
+    {
         match market {
             MarketKind::Spot => &Self::FOR_SPOT,
             MarketKind::LinearPerps | MarketKind::InversePerps => &Self::FOR_PERPS,
@@ -31,16 +35,18 @@ impl KlineIndicator {
     // Indicator togglers on UI menus depend on these arrays.
     // Every variant needs to be in either SPOT, PERPS or both.
     /// Indicators that can be used with spot market tickers
-    const FOR_SPOT: [KlineIndicator; 3] = [
+    const FOR_SPOT: [KlineIndicator; 4] = [
         KlineIndicator::Volume,
         KlineIndicator::BarAnalysis,
         KlineIndicator::CumulativeDelta,
+        KlineIndicator::TradeSpeed,
     ];
     /// Indicators that can be used with perpetual swap market tickers
-    const FOR_PERPS: [KlineIndicator; 4] = [
+    const FOR_PERPS: [KlineIndicator; 5] = [
         KlineIndicator::Volume,
         KlineIndicator::BarAnalysis,
         KlineIndicator::CumulativeDelta,
+        KlineIndicator::TradeSpeed,
         KlineIndicator::OpenInterest,
     ];
 }
@@ -51,6 +57,7 @@ impl Display for KlineIndicator {
             KlineIndicator::Volume => write!(f, "Volume"),
             KlineIndicator::BarAnalysis => write!(f, "Bar Analysis"),
             KlineIndicator::CumulativeDelta => write!(f, "CVD"),
+            KlineIndicator::TradeSpeed => write!(f, "Trade Speed"),
             KlineIndicator::OpenInterest => write!(f, "Open Interest"),
         }
     }
@@ -62,7 +69,10 @@ pub enum HeatmapIndicator {
 }
 
 impl Indicator for HeatmapIndicator {
-    fn for_market(market: MarketKind) -> &'static [Self] {
+    fn for_market(market: MarketKind) -> &'static [Self]
+    where
+        Self: Sized,
+    {
         match market {
             MarketKind::Spot => &Self::FOR_SPOT,
             MarketKind::LinearPerps | MarketKind::InversePerps => &Self::FOR_PERPS,
