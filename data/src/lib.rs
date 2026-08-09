@@ -8,6 +8,7 @@ pub mod log;
 pub mod market;
 pub mod orderflow;
 pub mod panel;
+pub mod replay;
 pub mod stream;
 pub mod tickers_table;
 pub mod util;
