@@ -1,4 +1,8 @@
-use exchange::{Trade, UnixMs, depth::Depth, unit::{Price, Qty}};
+use exchange::{
+    Trade, UnixMs,
+    depth::Depth,
+    unit::{Price, Qty},
+};
 
 use super::{BookConsumptionEvent, BookSide};
 
@@ -87,10 +91,7 @@ impl BookConsumptionDetector {
     }
 
     pub fn set_config(&mut self, config: ConsumptionConfig) {
-        self.config = ConsumptionConfig::new(
-            config.match_window_ms,
-            config.min_trade_match_ratio,
-        );
+        self.config = ConsumptionConfig::new(config.match_window_ms, config.min_trade_match_ratio);
     }
 
     pub fn clear(&mut self) {
@@ -106,8 +107,7 @@ impl BookConsumptionDetector {
 
         let mut ordered = trades.to_vec();
         ordered.sort_by_key(|trade| trade.time);
-        self.trades
-            .extend(ordered.iter().map(MatchableTrade::from));
+        self.trades.extend(ordered.iter().map(MatchableTrade::from));
 
         if let Some(latest) = ordered.last().map(|trade| trade.time) {
             self.prune(latest);
@@ -204,13 +204,7 @@ impl BookConsumptionDetector {
             .fold(Qty::ZERO, |acc, trade| acc + trade.remaining)
     }
 
-    fn consume_matching_trades(
-        &mut self,
-        now: UnixMs,
-        price: Price,
-        is_sell: bool,
-        mut qty: Qty,
-    ) {
+    fn consume_matching_trades(&mut self, now: UnixMs, price: Price, is_sell: bool, mut qty: Qty) {
         if qty.is_zero() {
             return;
         }
@@ -288,8 +282,16 @@ mod tests {
         let before = depth(&[(99.0, 10.0)], &[(101.0, 10.0)]);
         let after = depth(&[(99.0, 5.0)], &[(101.0, 4.0)]);
 
-        assert!(detector.process_depth(UnixMs::new(1_000), &before).is_empty());
-        assert!(detector.process_depth(UnixMs::new(1_100), &after).is_empty());
+        assert!(
+            detector
+                .process_depth(UnixMs::new(1_000), &before)
+                .is_empty()
+        );
+        assert!(
+            detector
+                .process_depth(UnixMs::new(1_100), &after)
+                .is_empty()
+        );
     }
 
     #[test]
@@ -332,7 +334,11 @@ mod tests {
 
         detector.process_depth(UnixMs::new(3_000), &before);
         detector.record_trades(&[trade(3_050, true, 101.0, 5.0)]);
-        assert!(detector.process_depth(UnixMs::new(3_100), &after).is_empty());
+        assert!(
+            detector
+                .process_depth(UnixMs::new(3_100), &after)
+                .is_empty()
+        );
     }
 
     #[test]
@@ -362,6 +368,10 @@ mod tests {
 
         detector.process_depth(UnixMs::new(5_000), &before);
         detector.record_trades(&[trade(5_050, false, 101.0, 4.0)]); // only 50%
-        assert!(detector.process_depth(UnixMs::new(5_100), &after).is_empty());
+        assert!(
+            detector
+                .process_depth(UnixMs::new(5_100), &after)
+                .is_empty()
+        );
     }
 }

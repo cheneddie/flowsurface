@@ -1,6 +1,10 @@
 use std::collections::BTreeSet;
 
-use exchange::{Trade, UnixMs, depth::Depth, unit::{Price, PriceStep, Qty}};
+use exchange::{
+    Trade, UnixMs,
+    depth::Depth,
+    unit::{Price, PriceStep, Qty},
+};
 
 use super::{BookSide, TradeSpeedSnapshot};
 
@@ -150,16 +154,15 @@ pub fn detect_absorption(
         return Vec::new();
     }
 
-    let (buy_qty, sell_qty) = trades.iter().fold(
-        (Qty::ZERO, Qty::ZERO),
-        |(buy, sell), trade| {
+    let (buy_qty, sell_qty) = trades
+        .iter()
+        .fold((Qty::ZERO, Qty::ZERO), |(buy, sell), trade| {
             if trade.is_sell {
                 (buy, sell + trade.qty)
             } else {
                 (buy + trade.qty, sell)
             }
-        },
-    );
+        });
 
     let upward_ticks = directional_ticks(start_price, end_price, step, true);
     let downward_ticks = directional_ticks(start_price, end_price, step, false);
@@ -313,9 +316,19 @@ pub fn detect_stop_run(
 
     let reversal_ticks = match observation.swept_side {
         // Ask-side sweep is an upward run; confirmation requires reversal down.
-        BookSide::Ask => directional_ticks(observation.post_price, observation.extreme_price, step, true),
+        BookSide::Ask => directional_ticks(
+            observation.post_price,
+            observation.extreme_price,
+            step,
+            true,
+        ),
         // Bid-side sweep is a downward run; confirmation requires reversal up.
-        BookSide::Bid => directional_ticks(observation.extreme_price, observation.post_price, step, true),
+        BookSide::Bid => directional_ticks(
+            observation.extreme_price,
+            observation.post_price,
+            step,
+            true,
+        ),
     };
 
     if reversal_ticks < u64::from(config.min_reversal_ticks) {
@@ -369,7 +382,9 @@ mod tests {
     }
 
     fn step(value: f64) -> PriceStep {
-        PriceStep { units: p(value).units }
+        PriceStep {
+            units: p(value).units,
+        }
     }
 
     fn trade(ms: u64, is_sell: bool, price: f64, qty: f64) -> Trade {
@@ -396,14 +411,8 @@ mod tests {
 
         let mut consumed = BTreeSet::new();
         consumed.insert(p(101.0));
-        let signals = detect_liquidity_changes(
-            &before,
-            &after,
-            BookSide::Ask,
-            0.5,
-            q(1.0),
-            &consumed,
-        );
+        let signals =
+            detect_liquidity_changes(&before, &after, BookSide::Ask, 0.5, q(1.0), &consumed);
         assert!(signals.is_empty());
     }
 
@@ -427,10 +436,7 @@ mod tests {
 
     #[test]
     fn heavy_buying_without_upward_progress_flags_ask_absorption() {
-        let trades = [
-            trade(1, false, 100.0, 6.0),
-            trade(2, false, 100.0, 5.0),
-        ];
+        let trades = [trade(1, false, 100.0, 6.0), trade(2, false, 100.0, 5.0)];
         let signals = detect_absorption(
             &trades,
             p(100.0),
@@ -443,8 +449,7 @@ mod tests {
         );
 
         assert!(signals.iter().any(|signal| {
-            signal.aggressive_side == AggressiveSide::Buy
-                && signal.resting_side == BookSide::Ask
+            signal.aggressive_side == AggressiveSide::Buy && signal.resting_side == BookSide::Ask
         }));
     }
 

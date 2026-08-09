@@ -100,10 +100,8 @@ mod tests {
 
     #[test]
     fn confirmed_consumption_immediately_updates_book_speed() {
-        let mut flow = BookFlowEngine::new(
-            ConsumptionConfig::new(1_000, 0.5),
-            SpeedConfig::new(1_000),
-        );
+        let mut flow =
+            BookFlowEngine::new(ConsumptionConfig::new(1_000, 0.5), SpeedConfig::new(1_000));
 
         flow.on_depth(UnixMs::new(1_000), &depth(5.0));
         flow.record_trades(&[buy_trade(1_050, 5.0)]);

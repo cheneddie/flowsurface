@@ -17,7 +17,9 @@ impl Default for SpeedConfig {
 
 impl SpeedConfig {
     pub fn new(window_ms: u64) -> Self {
-        Self { window_ms: window_ms.max(1) }
+        Self {
+            window_ms: window_ms.max(1),
+        }
     }
 
     #[inline]
@@ -55,10 +57,14 @@ impl TradeWindowStats {
     }
 
     #[inline]
-    fn total_volume(self) -> f64 { self.buy_volume + self.sell_volume }
+    fn total_volume(self) -> f64 {
+        self.buy_volume + self.sell_volume
+    }
 
     #[inline]
-    fn delta_volume(self) -> f64 { self.buy_volume - self.sell_volume }
+    fn delta_volume(self) -> f64 {
+        self.buy_volume - self.sell_volume
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -70,7 +76,11 @@ struct TradeSample {
 
 impl From<&Trade> for TradeSample {
     fn from(value: &Trade) -> Self {
-        Self { time: value.time, is_sell: value.is_sell, qty: value.qty }
+        Self {
+            time: value.time,
+            is_sell: value.is_sell,
+            qty: value.qty,
+        }
     }
 }
 
@@ -98,10 +108,14 @@ pub struct TradeSpeedSnapshot {
 
 impl TradeSpeedSnapshot {
     #[inline]
-    pub fn buy_dominant(self) -> bool { self.delta_volume_rate > 0.0 }
+    pub fn buy_dominant(self) -> bool {
+        self.delta_volume_rate > 0.0
+    }
 
     #[inline]
-    pub fn sell_dominant(self) -> bool { self.delta_volume_rate < 0.0 }
+    pub fn sell_dominant(self) -> bool {
+        self.delta_volume_rate < 0.0
+    }
 }
 
 pub struct TradeSpeedEngine {
@@ -112,14 +126,22 @@ pub struct TradeSpeedEngine {
 
 impl TradeSpeedEngine {
     pub fn new(config: SpeedConfig) -> Self {
-        Self { config, samples: VecDeque::new(), latest_time: None }
+        Self {
+            config,
+            samples: VecDeque::new(),
+            latest_time: None,
+        }
     }
 
-    pub fn config(&self) -> SpeedConfig { self.config }
+    pub fn config(&self) -> SpeedConfig {
+        self.config
+    }
 
     pub fn set_config(&mut self, config: SpeedConfig) {
         self.config = SpeedConfig::new(config.window_ms);
-        if let Some(now) = self.latest_time { self.prune(now); }
+        if let Some(now) = self.latest_time {
+            self.prune(now);
+        }
     }
 
     pub fn clear(&mut self) {
@@ -127,14 +149,22 @@ impl TradeSpeedEngine {
         self.latest_time = None;
     }
 
-    pub fn is_empty(&self) -> bool { self.samples.is_empty() }
-    pub fn len(&self) -> usize { self.samples.len() }
+    pub fn is_empty(&self) -> bool {
+        self.samples.is_empty()
+    }
+    pub fn len(&self) -> usize {
+        self.samples.len()
+    }
 
     pub fn push_trade(&mut self, trade: &Trade) -> bool {
         let sample = TradeSample::from(trade);
-        let newest = self.latest_time.map_or(sample.time, |current| current.max(sample.time));
+        let newest = self
+            .latest_time
+            .map_or(sample.time, |current| current.max(sample.time));
         let cutoff = newest.saturating_sub(self.config.retained_ms());
-        if sample.time < cutoff { return false; }
+        if sample.time < cutoff {
+            return false;
+        }
         self.latest_time = Some(newest);
         self.samples.push_back(sample);
         self.prune(newest);
@@ -179,7 +209,8 @@ impl TradeSpeedEngine {
         let trade_acceleration = (trade_rate - previous_trade_rate) / window_seconds;
         let volume_acceleration = (volume_rate - previous_volume_rate) / window_seconds;
         let buy_volume_acceleration = (buy_volume_rate - previous_buy_volume_rate) / window_seconds;
-        let sell_volume_acceleration = (sell_volume_rate - previous_sell_volume_rate) / window_seconds;
+        let sell_volume_acceleration =
+            (sell_volume_rate - previous_sell_volume_rate) / window_seconds;
         let delta_share = if current.total_volume().abs() <= EPSILON {
             0.0
         } else {
@@ -203,7 +234,10 @@ impl TradeSpeedEngine {
             trade_acceleration_pct: percent_change(trade_rate, previous_trade_rate),
             volume_acceleration_pct: percent_change(volume_rate, previous_volume_rate),
             buy_volume_acceleration_pct: percent_change(buy_volume_rate, previous_buy_volume_rate),
-            sell_volume_acceleration_pct: percent_change(sell_volume_rate, previous_sell_volume_rate),
+            sell_volume_acceleration_pct: percent_change(
+                sell_volume_rate,
+                previous_sell_volume_rate,
+            ),
             delta_share,
         }
     }
@@ -215,11 +249,16 @@ impl TradeSpeedEngine {
 }
 
 impl Default for TradeSpeedEngine {
-    fn default() -> Self { Self::new(SpeedConfig::default()) }
+    fn default() -> Self {
+        Self::new(SpeedConfig::default())
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BookSide { Bid, Ask }
+pub enum BookSide {
+    Bid,
+    Ask,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BookConsumptionEvent {
@@ -274,7 +313,11 @@ pub struct BookSpeedEngine {
 
 impl BookSpeedEngine {
     pub fn new(config: SpeedConfig) -> Self {
-        Self { config, events: VecDeque::new(), latest_time: None }
+        Self {
+            config,
+            events: VecDeque::new(),
+            latest_time: None,
+        }
     }
 
     pub fn clear(&mut self) {
@@ -283,9 +326,13 @@ impl BookSpeedEngine {
     }
 
     pub fn push(&mut self, event: BookConsumptionEvent) -> bool {
-        let newest = self.latest_time.map_or(event.time, |current| current.max(event.time));
+        let newest = self
+            .latest_time
+            .map_or(event.time, |current| current.max(event.time));
         let cutoff = newest.saturating_sub(self.config.retained_ms());
-        if event.time < cutoff { return false; }
+        if event.time < cutoff {
+            return false;
+        }
         self.latest_time = Some(newest);
         self.events.push_back(event);
         self.prune(newest);
@@ -328,8 +375,14 @@ impl BookSpeedEngine {
             ask_qty_per_sec,
             bid_level_acceleration: (bid_levels_per_sec - previous_bid_levels_per_sec) / seconds,
             ask_level_acceleration: (ask_levels_per_sec - previous_ask_levels_per_sec) / seconds,
-            bid_level_acceleration_pct: percent_change(bid_levels_per_sec, previous_bid_levels_per_sec),
-            ask_level_acceleration_pct: percent_change(ask_levels_per_sec, previous_ask_levels_per_sec),
+            bid_level_acceleration_pct: percent_change(
+                bid_levels_per_sec,
+                previous_bid_levels_per_sec,
+            ),
+            ask_level_acceleration_pct: percent_change(
+                ask_levels_per_sec,
+                previous_ask_levels_per_sec,
+            ),
         }
     }
 
@@ -340,12 +393,18 @@ impl BookSpeedEngine {
 }
 
 impl Default for BookSpeedEngine {
-    fn default() -> Self { Self::new(SpeedConfig::default()) }
+    fn default() -> Self {
+        Self::new(SpeedConfig::default())
+    }
 }
 
 #[inline]
 fn percent_change(current: f64, previous: f64) -> Option<f64> {
-    if previous.abs() <= EPSILON { None } else { Some(((current - previous) / previous.abs()) * 100.0) }
+    if previous.abs() <= EPSILON {
+        None
+    } else {
+        Some(((current - previous) / previous.abs()) * 100.0)
+    }
 }
 
 #[cfg(test)]

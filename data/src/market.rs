@@ -1,6 +1,9 @@
 use std::collections::VecDeque;
 
-use exchange::{Trade, UnixMs, unit::{Price, Qty}};
+use exchange::{
+    Trade, UnixMs,
+    unit::{Price, Qty},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -43,11 +46,7 @@ pub struct InstrumentId {
 }
 
 impl InstrumentId {
-    pub fn new(
-        venue: MarketVenue,
-        symbol: impl Into<String>,
-        asset_class: AssetClass,
-    ) -> Self {
+    pub fn new(venue: MarketVenue, symbol: impl Into<String>, asset_class: AssetClass) -> Self {
         Self {
             venue,
             symbol: symbol.into(),
@@ -238,7 +237,11 @@ impl QueueMarketAdapter {
     }
 
     pub fn taiwan_futures_gateway(name: impl Into<String>) -> Self {
-        Self::new(name, MarketVenue::Taifex, MarketCapabilities::l2_orderflow())
+        Self::new(
+            name,
+            MarketVenue::Taifex,
+            MarketCapabilities::l2_orderflow(),
+        )
     }
 
     pub fn set_sequence_enforcement(&mut self, enabled: bool) {

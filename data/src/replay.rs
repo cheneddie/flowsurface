@@ -296,7 +296,11 @@ mod tests {
     #[test]
     fn archive_sorts_events_chronologically() {
         let archive = ReplayArchive::new(vec![event(300), event(100), event(200)]);
-        let times: Vec<_> = archive.events.iter().map(|event| event.time().as_u64()).collect();
+        let times: Vec<_> = archive
+            .events
+            .iter()
+            .map(|event| event.time().as_u64())
+            .collect();
         assert_eq!(times, vec![100, 200, 300]);
     }
 
@@ -340,7 +344,11 @@ mod tests {
         assert_eq!(recorder.out_of_order_events(), 1);
 
         let archive = recorder.finish();
-        let times: Vec<_> = archive.events.iter().map(|event| event.time().as_u64()).collect();
+        let times: Vec<_> = archive
+            .events
+            .iter()
+            .map(|event| event.time().as_u64())
+            .collect();
         assert_eq!(times, vec![100, 200, 300]);
     }
 

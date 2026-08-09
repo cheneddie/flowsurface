@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
-use exchange::{UnixMs, unit::{Price, Qty}};
+use exchange::{
+    UnixMs,
+    unit::{Price, Qty},
+};
 use serde::{Deserialize, Serialize};
 
 use super::BookSide;
@@ -267,14 +270,7 @@ mod tests {
         Qty::from_f64(value)
     }
 
-    fn event(
-        t: u64,
-        id: u64,
-        action: MboAction,
-        side: MboSide,
-        price: f64,
-        qty: f64,
-    ) -> MboEvent {
+    fn event(t: u64, id: u64, action: MboAction, side: MboSide, price: f64, qty: f64) -> MboEvent {
         MboEvent {
             time: UnixMs::new(t),
             order_id: id,

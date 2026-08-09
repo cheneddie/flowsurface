@@ -128,10 +128,7 @@ impl OrderFlowPipeline {
         Ok(update)
     }
 
-    fn ensure_instrument(
-        &self,
-        received: &InstrumentId,
-    ) -> Result<(), OrderFlowPipelineError> {
+    fn ensure_instrument(&self, received: &InstrumentId) -> Result<(), OrderFlowPipelineError> {
         if received == &self.instrument {
             Ok(())
         } else {
@@ -171,13 +168,14 @@ impl OrderFlowPipeline {
 
 #[cfg(test)]
 mod tests {
-    use exchange::{UnixMs, unit::{Price, Qty}};
+    use exchange::{
+        UnixMs,
+        unit::{Price, Qty},
+    };
 
     use super::*;
     use crate::{
-        market::{
-            AggressorSide, AssetClass, MarketVenue, NormalizedBookLevel, NormalizedTrade,
-        },
+        market::{AggressorSide, AssetClass, MarketVenue, NormalizedBookLevel, NormalizedTrade},
         orderflow::{MboAction, MboEvent, MboSide},
     };
 

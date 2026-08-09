@@ -1,4 +1,7 @@
-use exchange::{UnixMs, unit::{Price, PriceStep}};
+use exchange::{
+    UnixMs,
+    unit::{Price, PriceStep},
+};
 use serde::{Deserialize, Serialize};
 
 pub type DrawingId = u64;
@@ -33,25 +36,49 @@ impl DrawingPoint {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DrawingKind {
-    TrendLine { start: DrawingPoint, end: DrawingPoint },
-    Ray { start: DrawingPoint, through: DrawingPoint },
-    HorizontalLine { price: Price },
-    HorizontalRay { start: DrawingX, price: Price },
-    VerticalLine { x: DrawingX },
-    Rectangle { start: DrawingPoint, end: DrawingPoint },
+    TrendLine {
+        start: DrawingPoint,
+        end: DrawingPoint,
+    },
+    Ray {
+        start: DrawingPoint,
+        through: DrawingPoint,
+    },
+    HorizontalLine {
+        price: Price,
+    },
+    HorizontalRay {
+        start: DrawingX,
+        price: Price,
+    },
+    VerticalLine {
+        x: DrawingX,
+    },
+    Rectangle {
+        start: DrawingPoint,
+        end: DrawingPoint,
+    },
     ParallelChannel {
         start: DrawingPoint,
         end: DrawingPoint,
         offset: DrawingPoint,
     },
-    FibRetracement { start: DrawingPoint, end: DrawingPoint },
+    FibRetracement {
+        start: DrawingPoint,
+        end: DrawingPoint,
+    },
     FibExtension {
         start: DrawingPoint,
         end: DrawingPoint,
         projection: DrawingPoint,
     },
-    Text { at: DrawingPoint, text: String },
-    Brush { points: Vec<DrawingPoint> },
+    Text {
+        at: DrawingPoint,
+        text: String,
+    },
+    Brush {
+        points: Vec<DrawingPoint>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -235,7 +262,12 @@ impl DrawingStore {
     /// Call after loading a persisted store. It removes invalid selections and
     /// guarantees future drawing IDs cannot collide with persisted drawings.
     pub fn normalize_after_load(&mut self) {
-        let max_id = self.drawings.iter().map(|drawing| drawing.id).max().unwrap_or(0);
+        let max_id = self
+            .drawings
+            .iter()
+            .map(|drawing| drawing.id)
+            .max()
+            .unwrap_or(0);
         self.next_id = self.next_id.max(max_id.saturating_add(1)).max(1);
 
         if self.selected.is_some_and(|id| self.get(id).is_none()) {
@@ -278,12 +310,7 @@ pub enum MagnetMode {
 ///
 /// Weak mode snaps only within three ticks. Strong mode always snaps to the
 /// nearest candidate. Passing an empty candidate list leaves the price intact.
-pub fn snap_price(
-    target: Price,
-    candidates: &[Price],
-    step: PriceStep,
-    mode: MagnetMode,
-) -> Price {
+pub fn snap_price(target: Price, candidates: &[Price], step: PriceStep, mode: MagnetMode) -> Price {
     if matches!(mode, MagnetMode::Off) || candidates.is_empty() {
         return target;
     }
@@ -388,12 +415,12 @@ mod tests {
         });
 
         assert!(store.set_locked(id, true));
-        assert!(!store.replace_kind(
-            id,
-            DrawingKind::HorizontalLine { price: p(99.0) }
-        ));
+        assert!(!store.replace_kind(id, DrawingKind::HorizontalLine { price: p(99.0) }));
 
-        assert!(matches!(store.get(id).unwrap().kind, DrawingKind::TrendLine { .. }));
+        assert!(matches!(
+            store.get(id).unwrap().kind,
+            DrawingKind::TrendLine { .. }
+        ));
     }
 
     #[test]
@@ -408,7 +435,9 @@ mod tests {
 
     #[test]
     fn weak_magnet_snaps_only_nearby_prices() {
-        let step = PriceStep { units: p(0.5).units };
+        let step = PriceStep {
+            units: p(0.5).units,
+        };
         let candidates = [p(100.0), p(101.0)];
 
         assert_eq!(

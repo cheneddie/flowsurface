@@ -8,8 +8,8 @@ pub mod window;
 
 pub use advanced::{
     AbsorptionConfig, AbsorptionSignal, AggressiveSide, ExhaustionConfig, ExhaustionSignal,
-    LargeRestingOrder, LargeTradeSignal, LiquidityChangeKind, LiquidityChangeSignal,
-    StopRunConfig, StopRunObservation, StopRunSignal, detect_absorption, detect_exhaustion,
+    LargeRestingOrder, LargeTradeSignal, LiquidityChangeKind, LiquidityChangeSignal, StopRunConfig,
+    StopRunObservation, StopRunSignal, detect_absorption, detect_exhaustion,
     detect_large_resting_orders, detect_large_trade, detect_liquidity_changes, detect_stop_run,
 };
 pub use book_consumption::{BookConsumptionDetector, ConsumptionConfig};

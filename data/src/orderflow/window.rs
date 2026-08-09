@@ -61,7 +61,10 @@ mod tests {
 
     #[test]
     fn all_windows_are_strictly_increasing() {
-        let values: Vec<_> = SpeedWindow::ALL.into_iter().map(SpeedWindow::millis).collect();
+        let values: Vec<_> = SpeedWindow::ALL
+            .into_iter()
+            .map(SpeedWindow::millis)
+            .collect();
         assert_eq!(values, vec![250, 500, 1_000, 2_000, 5_000, 10_000]);
         assert!(values.windows(2).all(|pair| pair[0] < pair[1]));
     }
