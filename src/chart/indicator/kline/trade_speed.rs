@@ -76,6 +76,14 @@ impl TradeSpeedIndicator {
         )
     }
 
+    fn signed_number(value: f64) -> String {
+        if value > 0.0 {
+            format!("+{}", format_with_commas(value))
+        } else {
+            format_with_commas(value)
+        }
+    }
+
     fn tooltip_text(snapshot: TradeSpeedSnapshot) -> String {
         let accel_pct = snapshot
             .volume_acceleration_pct
@@ -83,7 +91,7 @@ impl TradeSpeedIndicator {
             .unwrap_or_else(|| "n/a".to_owned());
 
         format!(
-            "Trade Speed ({} ms)\nTrades/s: {}  Buy: {}  Sell: {}\nVolume/s: {}\nBuy Vol/s: {}  Sell Vol/s: {}\nDelta Vol/s: {:+}\nVolume Accel: {:+.2}/s² ({})\nDelta Share: {:+.1}%",
+            "Trade Speed ({} ms)\nTrades/s: {}  Buy: {}  Sell: {}\nVolume/s: {}\nBuy Vol/s: {}  Sell Vol/s: {}\nDelta Vol/s: {}\nVolume Accel: {:+.2}/s² ({})\nDelta Share: {:+.1}%",
             snapshot.window_ms,
             format_with_commas(snapshot.trade_rate),
             format_with_commas(snapshot.buy_trade_rate),
@@ -91,7 +99,7 @@ impl TradeSpeedIndicator {
             format_with_commas(snapshot.volume_rate),
             format_with_commas(snapshot.buy_volume_rate),
             format_with_commas(snapshot.sell_volume_rate),
-            format_with_commas(snapshot.delta_volume_rate),
+            Self::signed_number(snapshot.delta_volume_rate),
             snapshot.volume_acceleration,
             accel_pct,
             snapshot.delta_share * 100.0,
@@ -142,8 +150,10 @@ impl TradeSpeedIndicator {
             }
             PlotData::TickBased(_) => {
                 self.interval = None;
-                self.availability =
-                    IndicatorAvailability::Unavailable(AvailabilityCause::Basis(Basis::Tick(1)));
+                // The concrete Tick basis is supplied by `availability()` from
+                // the chart state. Keeping this neutral avoids fabricating a
+                // TickCount value here.
+                self.availability = IndicatorAvailability::Unknown;
             }
         }
 
@@ -177,7 +187,9 @@ impl KlineIndicatorImpl for TradeSpeedIndicator {
 
     fn availability(&self, chart: &ViewState) -> IndicatorAvailability {
         match chart.basis {
-            Basis::Tick(_) => IndicatorAvailability::Unavailable(AvailabilityCause::Basis(chart.basis)),
+            Basis::Tick(_) => {
+                IndicatorAvailability::Unavailable(AvailabilityCause::Basis(chart.basis))
+            }
             Basis::Time(_) => self.availability.clone(),
         }
     }
@@ -236,8 +248,15 @@ mod tests {
         assert!(tooltip.contains("Trades/s"));
         assert!(tooltip.contains("Buy Vol/s"));
         assert!(tooltip.contains("Sell Vol/s"));
-        assert!(tooltip.contains("Delta Vol/s"));
+        assert!(tooltip.contains("Delta Vol/s: +"));
         assert!(tooltip.contains("Volume Accel"));
         assert!(tooltip.contains("Delta Share"));
+    }
+
+    #[test]
+    fn signed_number_adds_plus_only_to_positive_values() {
+        assert!(TradeSpeedIndicator::signed_number(2.0).starts_with('+'));
+        assert!(TradeSpeedIndicator::signed_number(-2.0).starts_with('-'));
+        assert_eq!(TradeSpeedIndicator::signed_number(0.0), "0");
     }
 }
