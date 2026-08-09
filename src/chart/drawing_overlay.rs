@@ -13,7 +13,7 @@ use data::{
 };
 use exchange::{TickerInfo, UnixMs, unit::Price};
 use iced::{
-    Alignment, Point, Rectangle, Size, Theme, keyboard, mouse,
+    Alignment, Point, Rectangle, Size, keyboard, mouse,
     theme::palette::Extended,
     widget::canvas::{self, Event, Path, Stroke},
 };
@@ -680,7 +680,7 @@ impl DrawingOverlay {
             color,
             font: crate::style::AZERET_MONO,
             align_x: Alignment::Start.into(),
-            align_y: Alignment::Bottom.into(),
+            align_y: Alignment::End.into(),
             ..canvas::Text::default()
         });
     }
