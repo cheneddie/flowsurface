@@ -1,0 +1,50 @@
+name: Pro Order Flow Format Fix
+
+on:
+  push:
+    branches:
+      - feature/pro-orderflow-platform
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !startsWith(github.event.head_commit.message, 'style: cargo fmt') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/pro-orderflow-platform
+          fetch-depth: 0
+
+      - name: Read rust toolchain
+        id: rust_toolchain
+        shell: bash
+        run: |
+          channel="$(sed -nE 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)"[[:space:]]*$/\1/p' rust-toolchain.toml)"
+          test -n "$channel"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
+      - name: Install Rust + rustfmt
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.rust_toolchain.outputs.channel }}
+          components: rustfmt
+
+      - name: Apply rustfmt
+        run: cargo fmt --all
+
+      - name: Commit formatting when needed
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No formatting changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "style: cargo fmt pro order flow"
+          git push origin HEAD:feature/pro-orderflow-platform
