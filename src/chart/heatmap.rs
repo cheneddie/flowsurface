@@ -460,25 +460,6 @@ fn book_speed_hud_text(speed: BookSpeedSnapshot) -> String {
     )
 }
 
-#[cfg(test)]
-mod pro_orderflow_tests {
-    use super::*;
-
-    #[test]
-    fn book_speed_hud_maps_ask_consumption_to_buy_pressure() {
-        let speed = BookSpeedSnapshot {
-            ask_levels_per_sec: 3.0,
-            bid_levels_per_sec: 2.0,
-            ask_qty_per_sec: 12.0,
-            bid_qty_per_sec: 7.0,
-            ..BookSpeedSnapshot::default()
-        };
-        let text = book_speed_hud_text(speed);
-        assert!(text.contains("Buy 3.0L/s"));
-        assert!(text.contains("Sell 2.0L/s"));
-    }
-}
-
 impl canvas::Program<Message> for HeatmapChart {
     type State = Interaction;
 
@@ -1121,5 +1102,24 @@ fn draw_volume_profile(
             font: style::AZERET_MONO,
             ..canvas::Text::default()
         });
+    }
+}
+
+#[cfg(test)]
+mod pro_orderflow_tests {
+    use super::*;
+
+    #[test]
+    fn book_speed_hud_maps_ask_consumption_to_buy_pressure() {
+        let speed = BookSpeedSnapshot {
+            ask_levels_per_sec: 3.0,
+            bid_levels_per_sec: 2.0,
+            ask_qty_per_sec: 12.0,
+            bid_qty_per_sec: 7.0,
+            ..BookSpeedSnapshot::default()
+        };
+        let text = book_speed_hud_text(speed);
+        assert!(text.contains("Buy 3.0L/s"));
+        assert!(text.contains("Sell 2.0L/s"));
     }
 }

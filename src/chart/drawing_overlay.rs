@@ -27,8 +27,9 @@ const TOOLBAR_H: f32 = 24.0;
 const TOOLBAR_GAP: f32 = 3.0;
 const HIT_RADIUS_PX: f32 = 8.0;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum DrawingTool {
+    #[default]
     Select,
     TrendLine,
     HorizontalLine,
@@ -39,12 +40,6 @@ pub enum DrawingTool {
     FibExtension,
     Text,
     Brush,
-}
-
-impl Default for DrawingTool {
-    fn default() -> Self {
-        Self::Select
-    }
 }
 
 impl DrawingTool {
@@ -160,10 +155,6 @@ impl DrawingOverlay {
         }
     }
 
-    pub fn tool(&self) -> DrawingTool {
-        self.tool.get()
-    }
-
     pub fn set_tool(&self, tool: DrawingTool) {
         self.tool.set(tool);
         self.draft.borrow_mut().take();
@@ -219,9 +210,7 @@ impl DrawingOverlay {
                 }
             }
             Event::Mouse(mouse::Event::CursorMoved { .. }) => {
-                let Some(pos) = cursor_pos else {
-                    return None;
-                };
+                let pos = cursor_pos?;
                 let point = self.market_point(pos, bounds, chart, source);
 
                 if let Some(drag) = self.drag.borrow_mut().as_mut() {

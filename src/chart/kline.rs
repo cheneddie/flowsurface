@@ -165,7 +165,7 @@ pub struct KlineChart {
     chart: ViewState,
     data_source: PlotData<KlineDataPoint>,
     raw_trades: Vec<Trade>,
-    drawing_overlay: super::drawing_overlay::DrawingOverlay,
+    drawing_overlay: Box<super::drawing_overlay::DrawingOverlay>,
     indicators: EnumMap<KlineIndicator, Option<Box<dyn KlineIndicatorImpl>>>,
     fetching_trades: (bool, Option<Handle>),
     pub(crate) kind: KlineChartKind,
@@ -268,10 +268,10 @@ impl KlineChart {
                     visual_config,
                     data_source,
                     raw_trades,
-                    drawing_overlay: super::drawing_overlay::DrawingOverlay::new(
+                    drawing_overlay: Box::new(super::drawing_overlay::DrawingOverlay::new(
                         ticker_info,
                         basis,
-                    ),
+                    )),
                     indicators,
                     fetching_trades: (false, None),
                     request_handler: RequestHandler::default(),
@@ -333,10 +333,10 @@ impl KlineChart {
                     visual_config,
                     data_source,
                     raw_trades,
-                    drawing_overlay: super::drawing_overlay::DrawingOverlay::new(
+                    drawing_overlay: Box::new(super::drawing_overlay::DrawingOverlay::new(
                         ticker_info,
                         basis,
-                    ),
+                    )),
                     indicators,
                     fetching_trades: (false, None),
                     request_handler: RequestHandler::default(),
