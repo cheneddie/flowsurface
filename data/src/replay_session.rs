@@ -1,6 +1,8 @@
 use crate::{
     market::InstrumentId,
-    orderflow::{OrderFlowPipeline, OrderFlowPipelineConfig, OrderFlowPipelineError, OrderFlowPipelineUpdate},
+    orderflow::{
+        OrderFlowPipeline, OrderFlowPipelineConfig, OrderFlowPipelineError, OrderFlowPipelineUpdate,
+    },
     replay::{ReplayArchive, ReplayEngine, ReplayEvent},
 };
 use exchange::UnixMs;
@@ -137,7 +139,9 @@ impl ReplaySession {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::market::{AggressorSide, AssetClass, MarketVenue, NormalizedMarketEvent, NormalizedTrade};
+    use crate::market::{
+        AggressorSide, AssetClass, MarketVenue, NormalizedMarketEvent, NormalizedTrade,
+    };
     use exchange::unit::{Price, Qty};
 
     fn instrument() -> InstrumentId {
@@ -158,14 +162,16 @@ mod tests {
     #[test]
     fn paused_session_does_not_emit_events() {
         let archive = ReplayArchive::new(vec![trade(1_000, 1.0)]);
-        let mut session = ReplaySession::new(instrument(), archive, OrderFlowPipelineConfig::default());
+        let mut session =
+            ReplaySession::new(instrument(), archive, OrderFlowPipelineConfig::default());
         assert!(session.advance(5_000).unwrap().is_empty());
     }
 
     #[test]
     fn play_advances_same_orderflow_pipeline() {
         let archive = ReplayArchive::new(vec![trade(1_000, 2.0), trade(2_000, 3.0)]);
-        let mut session = ReplaySession::new(instrument(), archive, OrderFlowPipelineConfig::default());
+        let mut session =
+            ReplaySession::new(instrument(), archive, OrderFlowPipelineConfig::default());
         session.play();
         let batch = session.advance(1_000).unwrap();
         assert_eq!(batch.len(), 2);
@@ -176,8 +182,13 @@ mod tests {
 
     #[test]
     fn seek_rebuilds_pipeline_state_from_start() {
-        let archive = ReplayArchive::new(vec![trade(1_000, 1.0), trade(2_000, 2.0), trade(3_000, 3.0)]);
-        let mut session = ReplaySession::new(instrument(), archive, OrderFlowPipelineConfig::default());
+        let archive = ReplayArchive::new(vec![
+            trade(1_000, 1.0),
+            trade(2_000, 2.0),
+            trade(3_000, 3.0),
+        ]);
+        let mut session =
+            ReplaySession::new(instrument(), archive, OrderFlowPipelineConfig::default());
         let rebuilt = session.seek(UnixMs::new(2_000)).unwrap();
         assert_eq!(rebuilt.len(), 2);
         assert_eq!(session.remaining(), 1);
@@ -187,7 +198,8 @@ mod tests {
     #[test]
     fn finished_play_restarts_from_beginning() {
         let archive = ReplayArchive::new(vec![trade(1_000, 1.0)]);
-        let mut session = ReplaySession::new(instrument(), archive, OrderFlowPipelineConfig::default());
+        let mut session =
+            ReplaySession::new(instrument(), archive, OrderFlowPipelineConfig::default());
         session.play();
         session.advance(10).unwrap();
         assert_eq!(session.state(), ReplayState::Finished);

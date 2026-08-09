@@ -97,12 +97,13 @@ impl<R: BufRead> JsonlGatewayReader<R> {
 mod tests {
     use std::io::{BufReader, Cursor};
 
-    use exchange::{UnixMs, unit::{Price, Qty}};
+    use exchange::{
+        UnixMs,
+        unit::{Price, Qty},
+    };
 
     use super::*;
-    use crate::market::{
-        AggressorSide, AssetClass, InstrumentId, MarketVenue, NormalizedTrade,
-    };
+    use crate::market::{AggressorSide, AssetClass, InstrumentId, MarketVenue, NormalizedTrade};
 
     fn event(sequence: u64) -> NormalizedMarketEvent {
         NormalizedMarketEvent::Trade(NormalizedTrade {
