@@ -13,12 +13,10 @@ use crate::chart::{
 
 use data::{
     chart::{PlotData, kline::KlineDataPoint},
-    orderflow::{SpeedConfig, TradeSpeedEngine, TradeSpeedSnapshot},
+    orderflow::{SpeedWindow, TradeSpeedEngine, TradeSpeedSnapshot},
     util::format_with_commas,
 };
 use exchange::{Timeframe, Trade, UnixMs};
-
-const DEFAULT_WINDOW_MS: u64 = 1_000;
 
 #[derive(Debug, Clone, Copy)]
 struct TradeSpeedPoint {
@@ -35,9 +33,13 @@ pub struct TradeSpeedIndicator {
 
 impl TradeSpeedIndicator {
     pub fn new() -> Self {
+        Self::with_window(SpeedWindow::S1)
+    }
+
+    pub fn with_window(window: SpeedWindow) -> Self {
         Self {
             cache: Caches::default(),
-            engine: TradeSpeedEngine::new(SpeedConfig::new(DEFAULT_WINDOW_MS)),
+            engine: TradeSpeedEngine::new(window.into()),
             data: BTreeMap::new(),
             interval: None,
             availability: IndicatorAvailability::Unknown,
@@ -220,6 +222,14 @@ impl KlineIndicatorImpl for TradeSpeedIndicator {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn selectable_windows_configure_engine() {
+        for window in SpeedWindow::ALL {
+            let indicator = TradeSpeedIndicator::with_window(window);
+            assert_eq!(indicator.engine.config().window_ms, window.millis());
+        }
+    }
 
     #[test]
     fn tooltip_contains_core_speed_metrics() {

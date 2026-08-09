@@ -4,6 +4,7 @@ use crate::connector::fetcher::FetchRange;
 use data::chart::indicator::KlineIndicator;
 use data::chart::kline::KlineDataPoint;
 use data::chart::{BasisSeries, PlotData};
+use data::orderflow::SpeedWindow;
 use exchange::adapter::Exchange;
 use exchange::{Kline, Timeframe, Trade, UnixMs};
 
@@ -149,9 +150,24 @@ pub fn make_empty(which: KlineIndicator) -> Box<dyn KlineIndicatorImpl> {
         KlineIndicator::CumulativeDelta => {
             Box::new(super::kline::cumulative_delta::CumulativeDeltaIndicator::new())
         }
-        KlineIndicator::TradeSpeed => {
-            Box::new(super::kline::trade_speed::TradeSpeedIndicator::new())
-        }
+        KlineIndicator::TradeSpeed250ms => Box::new(
+            super::kline::trade_speed::TradeSpeedIndicator::with_window(SpeedWindow::Ms250),
+        ),
+        KlineIndicator::TradeSpeed500ms => Box::new(
+            super::kline::trade_speed::TradeSpeedIndicator::with_window(SpeedWindow::Ms500),
+        ),
+        KlineIndicator::TradeSpeed => Box::new(
+            super::kline::trade_speed::TradeSpeedIndicator::with_window(SpeedWindow::S1),
+        ),
+        KlineIndicator::TradeSpeed2s => Box::new(
+            super::kline::trade_speed::TradeSpeedIndicator::with_window(SpeedWindow::S2),
+        ),
+        KlineIndicator::TradeSpeed5s => Box::new(
+            super::kline::trade_speed::TradeSpeedIndicator::with_window(SpeedWindow::S5),
+        ),
+        KlineIndicator::TradeSpeed10s => Box::new(
+            super::kline::trade_speed::TradeSpeedIndicator::with_window(SpeedWindow::S10),
+        ),
         KlineIndicator::OpenInterest => {
             Box::new(super::kline::open_interest::OpenInterestIndicator::new())
         }
