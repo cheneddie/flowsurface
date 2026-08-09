@@ -222,20 +222,11 @@ impl ReplayEngine {
 }
 
 /// Collects live normalized events into a deterministic replay archive.
+#[derive(Default)]
 pub struct ReplayRecorder {
     events: Vec<ReplayEvent>,
     last_seen: Option<UnixMs>,
     out_of_order_events: u64,
-}
-
-impl Default for ReplayRecorder {
-    fn default() -> Self {
-        Self {
-            events: Vec::new(),
-            last_seen: None,
-            out_of_order_events: 0,
-        }
-    }
 }
 
 impl ReplayRecorder {
