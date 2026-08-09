@@ -5,6 +5,7 @@ pub mod config;
 pub mod drawing;
 pub mod layout;
 pub mod log;
+pub mod market;
 pub mod orderflow;
 pub mod panel;
 pub mod stream;
