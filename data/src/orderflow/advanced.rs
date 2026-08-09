@@ -168,7 +168,8 @@ pub fn detect_absorption(
     let downward_ticks = directional_ticks(start_price, end_price, step, false);
     let mut out = Vec::new();
 
-    if buy_qty >= config.min_aggressive_qty
+    if !buy_qty.is_zero()
+        && buy_qty >= config.min_aggressive_qty
         && upward_ticks <= u64::from(config.max_price_move_ticks)
     {
         out.push(AbsorptionSignal {
@@ -181,7 +182,8 @@ pub fn detect_absorption(
         });
     }
 
-    if sell_qty >= config.min_aggressive_qty
+    if !sell_qty.is_zero()
+        && sell_qty >= config.min_aggressive_qty
         && downward_ticks <= u64::from(config.max_price_move_ticks)
     {
         out.push(AbsorptionSignal {
@@ -451,6 +453,29 @@ mod tests {
         assert!(signals.iter().any(|signal| {
             signal.aggressive_side == AggressiveSide::Buy && signal.resting_side == BookSide::Ask
         }));
+    }
+
+    #[test]
+    fn one_sided_flow_does_not_emit_zero_quantity_opposite_absorption() {
+        let trades = [trade(1, false, 100.0, 10.0)];
+        let signals = detect_absorption(
+            &trades,
+            p(100.0),
+            p(100.0),
+            step(0.5),
+            AbsorptionConfig::default(),
+        );
+
+        assert!(
+            signals
+                .iter()
+                .any(|signal| signal.aggressive_side == AggressiveSide::Buy)
+        );
+        assert!(
+            !signals
+                .iter()
+                .any(|signal| signal.aggressive_side == AggressiveSide::Sell)
+        );
     }
 
     #[test]
