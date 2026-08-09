@@ -15,6 +15,7 @@ use data::util::abbr_large_numbers;
 use data::{
     aggr::time::{DataPoint, TimeSeries},
     chart::Autoscale,
+    orderflow::{BookFlowEngine, BookSpeedSnapshot},
 };
 use exchange::{
     SizeUnit, TickerInfo, Trade, UnixMs,
@@ -154,6 +155,8 @@ pub struct HeatmapChart {
     indicators: EnumMap<HeatmapIndicator, Option<IndicatorData>>,
     pause_buffer: Vec<(UnixMs, Box<[Trade]>, Depth)>,
     heatmap: HistoricalDepth,
+    book_flow: BookFlowEngine,
+    latest_book_speed: Option<BookSpeedSnapshot>,
     visual_config: Config,
     study_configurator: study::Configurator<HeatmapStudy>,
     last_tick: Instant,
@@ -197,6 +200,8 @@ impl HeatmapChart {
             indicators,
             pause_buffer: vec![],
             heatmap,
+            book_flow: BookFlowEngine::default(),
+            latest_book_speed: None,
             trades: TimeSeries::<HeatmapDataPoint>::new(basis, step),
             visual_config: config.unwrap_or_default(),
             study_configurator: study::Configurator::new(),
@@ -206,6 +211,7 @@ impl HeatmapChart {
     }
 
     pub fn insert_trades(&mut self, buffer: &[Trade], update_t: UnixMs) {
+        self.book_flow.record_trades(buffer);
         let rounded_update_t = self.round_to_basis_time(update_t);
 
         let entry = self.trades.datapoints.entry(rounded_update_t).or_default();
@@ -217,6 +223,11 @@ impl HeatmapChart {
     }
 
     pub fn insert_depth(&mut self, depth: &Depth, update_t: UnixMs) {
+        let flow_update = self.book_flow.on_depth(update_t, depth);
+        if let Some(speed) = flow_update.speed {
+            self.latest_book_speed = Some(speed);
+        }
+
         let rounded_depth_update = self.round_to_basis_time(update_t);
 
         let chart = &mut self.chart;
@@ -300,6 +311,8 @@ impl HeatmapChart {
         self.trades.datapoints.clear();
         self.heatmap =
             HistoricalDepth::new(self.chart.ticker_info.min_qty, self.chart.tick_size, basis);
+        self.book_flow.clear();
+        self.latest_book_speed = None;
 
         let chart = &mut self.chart;
         chart.translation = Vector::new(
@@ -361,6 +374,12 @@ impl HeatmapChart {
 
         self.trades.datapoints.clear();
         self.heatmap = HistoricalDepth::new(self.chart.ticker_info.min_qty, step, basis);
+        self.book_flow.clear();
+        self.latest_book_speed = None;
+    }
+
+    pub fn latest_book_speed(&self) -> Option<BookSpeedSnapshot> {
+        self.latest_book_speed
     }
 
     pub fn tick_size(&self) -> PriceStep {
@@ -428,6 +447,35 @@ impl HeatmapChart {
             max_aggr_volume,
             max_depth_qty,
         }
+    }
+}
+
+fn book_speed_hud_text(speed: BookSpeedSnapshot) -> String {
+    format!(
+        "BOOK SPEED  Buy {:.1}L/s  Sell {:.1}L/s\nBuy Qty {} /s  Sell Qty {} /s",
+        speed.ask_levels_per_sec,
+        speed.bid_levels_per_sec,
+        abbr_large_numbers(speed.ask_qty_per_sec),
+        abbr_large_numbers(speed.bid_qty_per_sec),
+    )
+}
+
+#[cfg(test)]
+mod pro_orderflow_tests {
+    use super::*;
+
+    #[test]
+    fn book_speed_hud_maps_ask_consumption_to_buy_pressure() {
+        let speed = BookSpeedSnapshot {
+            ask_levels_per_sec: 3.0,
+            bid_levels_per_sec: 2.0,
+            ask_qty_per_sec: 12.0,
+            bid_qty_per_sec: 7.0,
+            ..BookSpeedSnapshot::default()
+        };
+        let text = book_speed_hud_text(speed);
+        assert!(text.contains("Buy 3.0L/s"));
+        assert!(text.contains("Sell 2.0L/s"));
     }
 }
 
@@ -621,6 +669,24 @@ impl canvas::Program<Message> for HeatmapChart {
                     });
                 }
             };
+
+            if let Some(speed) = self.latest_book_speed {
+                let text_size = crate::style::text_size::TINY / chart.scaling;
+                let text_position = Point::new(
+                    region.x + (8.0 / chart.scaling),
+                    region.y + (8.0 / chart.scaling),
+                );
+                frame.fill_text(canvas::Text {
+                    content: book_speed_hud_text(speed),
+                    position: text_position,
+                    size: iced::Pixels(text_size),
+                    color: palette.background.base.text,
+                    font: style::AZERET_MONO,
+                    align_x: Alignment::Start.into(),
+                    align_y: Alignment::Start.into(),
+                    ..canvas::Text::default()
+                });
+            }
 
             self.trades
                 .datapoints
