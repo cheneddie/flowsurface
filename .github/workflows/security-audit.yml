@@ -1,0 +1,44 @@
+name: Security Audit
+
+on:
+  push:
+    branches:
+      - security/audit-20260810
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rustsec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read Rust toolchain
+        id: rust_toolchain
+        shell: bash
+        run: |
+          channel="$(sed -nE 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)"[[:space:]]*$/\1/p' rust-toolchain.toml)"
+          test -n "$channel"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.rust_toolchain.outputs.channel }}
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --version 0.22.2 --locked
+      - name: RustSec dependency audit
+        run: cargo audit
+      - name: Sensitive-pattern scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '--- unsafe usage ---'
+          grep -RIn --exclude-dir=.git --include='*.rs' -E '\bunsafe\b' . || true
+          echo '--- command execution ---'
+          grep -RIn --exclude-dir=.git --include='*.rs' -E 'Command::new|std::process::Command|tokio::process::Command' . || true
+          echo '--- TLS relaxations ---'
+          grep -RIn --exclude-dir=.git --include='*.rs' -E 'danger_accept_invalid|accept_invalid|http://' . || true
+          echo '--- listeners / servers ---'
+          grep -RIn --exclude-dir=.git --include='*.rs' -E 'TcpListener|UdpSocket|bind\(' . || true
+          echo '--- obvious hard-coded credential markers ---'
+          grep -RIn --exclude-dir=.git --exclude='Cargo.lock' -E '(BEGIN (RSA |EC |OPENSSH |PGP )?PRIVATE KEY|api[_-]?key\s*[:=]|client[_-]?secret\s*[:=]|password\s*[:=])' . || true
