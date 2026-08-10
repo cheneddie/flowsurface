@@ -1,0 +1,49 @@
+name: Security Detail
+
+on:
+  push:
+    branches:
+      - security/audit-20260810
+    paths:
+      - .github/workflows/security-detail.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  detail:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read Rust toolchain
+        id: rust_toolchain
+        shell: bash
+        run: |
+          channel="$(sed -nE 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)"[[:space:]]*$/\1/p' rust-toolchain.toml)"
+          test -n "$channel"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.rust_toolchain.outputs.channel }}
+      - name: Vulnerable dependency reverse trees
+        shell: bash
+        run: |
+          set +e
+          for pkg in 'quick-xml@0.39.4' 'quinn-proto@0.11.14' 'ring@0.16.20' 'rkyv@0.8.16' 'rustls-webpki@0.100.3' 'rustls-webpki@0.101.7' 'bincode@1.3.3' 'bincode@2.0.1' 'paste@1.0.15' 'ttf-parser@0.25.1' 'anyhow@1.0.102' 'memmap2@0.9.10'; do
+            echo "===== $pkg ====="
+            cargo tree -i "$pkg" --workspace --all-features
+          done
+      - name: Source security pattern scan
+        shell: bash
+        run: |
+          echo '===== unsafe usage ====='
+          grep -RIn --exclude-dir=.git --include='*.rs' -E '\bunsafe\b' . || true
+          echo '===== process command execution ====='
+          grep -RIn --exclude-dir=.git --include='*.rs' -E 'Command::new|std::process::Command|tokio::process::Command' . || true
+          echo '===== TLS relaxations / plaintext URL literals ====='
+          grep -RIn --exclude-dir=.git --include='*.rs' -E 'danger_accept_invalid|accept_invalid|http://' . || true
+          echo '===== inbound socket listeners ====='
+          grep -RIn --exclude-dir=.git --include='*.rs' -E 'TcpListener|UdpSocket|\.bind\(' . || true
+          echo '===== obvious private-key / credential literals ====='
+          grep -RIn --exclude-dir=.git --exclude='Cargo.lock' -E 'BEGIN (RSA |EC |OPENSSH |PGP )?PRIVATE KEY|api[_-]?key[[:space:]]*[:=]|client[_-]?secret[[:space:]]*[:=]' . || true
